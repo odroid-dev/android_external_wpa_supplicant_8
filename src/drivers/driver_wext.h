@@ -78,4 +78,6 @@ int wpa_driver_wext_set_auth_param(struct wpa_driver_wext_data *drv,
 int wpa_driver_wext_cipher2wext(int cipher);
 int wpa_driver_wext_keymgmt2wext(int keymgmt);
 
+#define WPA_EVENT_DRIVER_STATE		"CTRL-EVENT-DRIVER-STATE "
+#define WEXT_CSCAN_AMOUNT		9
 #endif /* DRIVER_WEXT_H */
