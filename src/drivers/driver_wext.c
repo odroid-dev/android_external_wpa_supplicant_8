@@ -2503,11 +2503,9 @@ const struct wpa_driver_ops wpa_driver_wext_ops = {
 	.get_capa = wpa_driver_wext_get_capa,
 	.set_operstate = wpa_driver_wext_set_operstate,
 	.get_radio_name = wext_get_radio_name,
-#ifdef ANDROID
-	.signal_poll = wpa_driver_signal_poll,
-	.driver_cmd = wpa_driver_wext_driver_cmd,
-#else
 	.signal_poll = wpa_driver_wext_signal_poll,
+#ifdef ANDROID
+	.driver_cmd = wpa_driver_wext_driver_cmd,
 #endif /* ANDROID */
 	.status = wpa_driver_wext_status,
 };
