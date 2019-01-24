@@ -17,15 +17,16 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <net/if.h>
 #include <net/if_arp.h>
 #include <dirent.h>
+#include <linux/rtnetlink.h>
 
 #include "linux_wext.h"
 #include "common.h"
 #include "eloop.h"
 #include "common/ieee802_11_defs.h"
 #include "common/wpa_common.h"
-#include "priv_netlink.h"
 #include "netlink.h"
 #include "linux_ioctl.h"
 #include "rfkill.h"
