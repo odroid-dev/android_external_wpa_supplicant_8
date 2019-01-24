@@ -23,7 +23,7 @@ struct netlink_data {
 static void netlink_receive_link(struct netlink_data *netlink,
 				 void (*cb)(void *ctx, struct ifinfomsg *ifi,
 					    u8 *buf, size_t len),
-				 struct nlmsghdr_wpa *h)
+				 struct nlmsghdr *h)
 {
 	if (cb == NULL || NLMSG_PAYLOAD(h, 0) < sizeof(struct ifinfomsg))
 		return;
@@ -38,9 +38,9 @@ static void netlink_receive(int sock, void *eloop_ctx, void *sock_ctx)
 	struct netlink_data *netlink = eloop_ctx;
 	char buf[8192];
 	int left;
-	struct sockaddr_nl_wpa from;
+	struct sockaddr_nl from;
 	socklen_t fromlen;
-	struct nlmsghdr_wpa *h;
+	struct nlmsghdr *h;
 	int max_events = 10;
 
 try_again:
@@ -54,7 +54,7 @@ try_again:
 		return;
 	}
 
-	h = (struct nlmsghdr_wpa *) buf;
+	h = (struct nlmsghdr *) buf;
 	while (NLMSG_OK(h, left)) {
 		switch (h->nlmsg_type) {
 		case RTM_NEWLINK:
@@ -91,7 +91,7 @@ try_again:
 struct netlink_data * netlink_init(struct netlink_config *cfg)
 {
 	struct netlink_data *netlink;
-	struct sockaddr_nl_wpa local;
+	struct sockaddr_nl local;
 
 	netlink = os_zalloc(sizeof(*netlink));
 	if (netlink == NULL)
@@ -170,7 +170,7 @@ int netlink_send_oper_ifla(struct netlink_data *netlink, int ifindex,
 			   int linkmode, int operstate)
 {
 	struct {
-		struct nlmsghdr_wpa hdr;
+		struct nlmsghdr hdr;
 		struct ifinfomsg ifinfo;
 		char opts[16];
 	} req;
