@@ -39,9 +39,6 @@
 #include "rfkill.h"
 #include "driver_nl80211.h"
 
-#include <cutils/properties.h>
-
-static const char DRIVER_PROP_TAG[] = "wlan.driver.tag";
 
 #ifndef CONFIG_LIBNL20
 /*
@@ -1898,15 +1895,6 @@ static void * wpa_driver_nl80211_drv_init(void *ctx, const char *ifname,
 	drv->eapol_tx_sock = socket(PF_PACKET, SOCK_DGRAM, 0);
 	if (drv->eapol_tx_sock < 0)
 		goto failed;
-
-	char tag[PROPERTY_VALUE_MAX];
-	property_get(DRIVER_PROP_TAG, tag, NULL);
-	wpa_printf(MSG_INFO, "driver name = %s", tag);
-	if (os_strcmp(tag, "rtl8192cu") == 0 ||
-		os_strcmp(tag, "8812au") == 0) {
-		wpa_printf(MSG_INFO, "%s driver must fail because %s driver used wext", tag, tag);
-		goto failed;
-	}
 
 	if (drv->data_tx_status) {
 		int enabled = 1;
