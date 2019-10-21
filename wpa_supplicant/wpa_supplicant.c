@@ -5760,7 +5760,6 @@ int wpa_supplicant_remove_iface(struct wpa_global *global,
 				int terminate)
 {
 	struct wpa_supplicant *prev;
-	static Boolean remove_p2p = FALSE;
 #ifdef CONFIG_MESH
 	unsigned int mesh_if_created = wpa_s->mesh_if_created;
 	char *ifname = NULL;
@@ -5769,14 +5768,6 @@ int wpa_supplicant_remove_iface(struct wpa_global *global,
 
 	/* Remove interface from the global list of interfaces */
 	prev = global->ifaces;
-	if (os_strcmp(wpa_s->ifname, "wlan0") == 0)
-		remove_p2p = TRUE;
-
-	if (os_strncmp(wpa_s->ifname, "p2p-dev-wlan", 12) == 0 && remove_p2p != TRUE) {
-		wpa_dbg(wpa_s, MSG_ERROR, "do not Removing interface, %s", wpa_s->ifname);
-		return 0;
-	}
-
 	if (prev == wpa_s) {
 		global->ifaces = wpa_s->next;
 	} else {
