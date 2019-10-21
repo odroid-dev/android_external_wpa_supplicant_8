@@ -289,7 +289,7 @@ int main(int argc, char *argv[])
 			break;
 #ifdef MULTI_WIFI_SUPPORT
 		case 'c':
-			if (is_wifi_driver_loaded("wlan") || is_wifi_driver_loaded("atbm602x_usb") || is_wifi_driver_loaded("mt7601usta")) {
+			if (is_wifi_driver_loaded("dhd") == 1 || is_wifi_driver_loaded("bcmdhd") == 1)
 				if (!ensure_config_file_exists(P2P_CONFIG_FILE))
 					iface->confname = P2P_CONFIG_FILE;
 				else
@@ -339,7 +339,7 @@ int main(int argc, char *argv[])
 			goto out;
 #ifdef MULTI_WIFI_SUPPORT
 		case 'i':
-			if (is_wifi_driver_loaded("wlan" || is_wifi_driver_loaded("atbm602x_usb") || is_wifi_driver_loaded("mt7601usta"))) {
+			if (is_wifi_driver_loaded("dhd") == 1 || is_wifi_driver_loaded("bcmdhd") == 1)
 				iface->ifname = "p2p0";
 			} else {
 				iface->ifname = optarg;
