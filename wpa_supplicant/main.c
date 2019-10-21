@@ -17,6 +17,31 @@
 #include "driver_i.h"
 #include "p2p_supplicant.h"
 
+#ifdef MULTI_WIFI_SUPPORT
+#include <dlfcn.h>
+static int is_bcm_driver_loaded() {
+	FILE *proc;
+	char line[sizeof("bcmdhd")+15];
+
+	/*
+	 * If the property says the driver is loaded, check to
+	 * make sure that the property setting isn't just left
+	 * over from a previous manual shutdown or a runtime
+	 * crash.
+	 */
+	if ((proc = fopen("/proc/modules", "r")) == NULL) {
+		return 0;
+	}
+	while ((fgets(line, sizeof(line), proc)) != NULL) {
+		if (strncmp(line, "dhd", 3) == 0 || strncmp(line, "bcmdhd", 6) == 0) {
+			fclose(proc);
+			return 1;
+		}
+	}
+	fclose(proc);
+	return 0;
+}
+#endif
 
 static void usage(void)
 {
@@ -262,6 +287,12 @@ int main(int argc, char *argv[])
 			exitcode = 0;
 			goto out;
 #ifdef CONFIG_P2P
+#ifdef MULTI_WIFI_SUPPORT
+		case 'm':
+			if (is_bcm_driver_loaded() == 1)
+			 	params.conf_p2p_dev = optarg;
+			break;
+#else
 		case 'm':
 			params.conf_p2p_dev = optarg;
 			break;
@@ -272,9 +303,16 @@ int main(int argc, char *argv[])
 		case 'O':
 			params.override_ctrl_interface = optarg;
 			break;
+#ifdef MULTI_WIFI_SUPPORT
+		case 'p':
+			if (is_bcm_driver_loaded() == 1)
+				iface->driver_param = optarg;
+			break;
+#else
 		case 'p':
 			iface->driver_param = optarg;
 			break;
+#endif
 		case 'P':
 			os_free(params.pid_file);
 			params.pid_file = os_rel2abs_path(optarg);
