@@ -19,9 +19,9 @@
 
 #ifdef MULTI_WIFI_SUPPORT
 #include <dlfcn.h>
-static int is_bcm_driver_loaded() {
+static int is_wifi_driver_loaded(const char *module_tag) {
 	FILE *proc;
-	char line[sizeof("bcmdhd")+15];
+	char line[sizeof(module_tag)+10];
 
 	/*
 	 * If the property says the driver is loaded, check to
@@ -33,7 +33,7 @@ static int is_bcm_driver_loaded() {
 		return 0;
 	}
 	while ((fgets(line, sizeof(line), proc)) != NULL) {
-		if (strncmp(line, "dhd", 3) == 0 || strncmp(line, "bcmdhd", 6) == 0) {
+		if (strncmp(line, module_tag, strlen(module_tag)) == 0) {
 			fclose(proc);
 			return 1;
 		}
@@ -273,9 +273,19 @@ int main(int argc, char *argv[])
 			usage();
 			exitcode = 0;
 			goto out;
+#ifdef MULTI_WIFI_SUPPORT
+		case 'i':
+			if (is_wifi_driver_loaded("wlan")) {
+				iface->ifname = "p2p0";
+			} else {
+				iface->ifname = optarg;
+			}
+			break;
+#else
 		case 'i':
 			iface->ifname = optarg;
 			break;
+#endif
 		case 'I':
 			iface->confanother = optarg;
 			break;
@@ -289,7 +299,7 @@ int main(int argc, char *argv[])
 #ifdef CONFIG_P2P
 #ifdef MULTI_WIFI_SUPPORT
 		case 'm':
-			if (is_bcm_driver_loaded() == 1)
+			if (is_wifi_driver_loaded("dhd") == 1 || is_wifi_driver_loaded("bcmdhd") == 1)
 			 	params.conf_p2p_dev = optarg;
 			break;
 #else
@@ -305,7 +315,7 @@ int main(int argc, char *argv[])
 			break;
 #ifdef MULTI_WIFI_SUPPORT
 		case 'p':
-			if (is_bcm_driver_loaded() == 1)
+			if (is_wifi_driver_loaded("dhd") == 1 || is_wifi_driver_loaded("bcmdhd") == 1)
 				iface->driver_param = optarg;
 			break;
 #else
