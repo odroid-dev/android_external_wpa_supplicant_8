@@ -19,6 +19,9 @@
 
 #ifdef MULTI_WIFI_SUPPORT
 #include <dlfcn.h>
+
+static const char SUPP_CONFIG_TEMPLATE[] = "/vendor/etc/wifi/wpa_supplicant.conf";
+static const char P2P_CONFIG_FILE[] = "/data/vendor/wifi/wpa/p2p_supplicant.conf";
 static int is_wifi_driver_loaded(const char *module_tag) {
 	FILE *proc;
 	char line[sizeof(module_tag)+10];
@@ -41,6 +44,54 @@ static int is_wifi_driver_loaded(const char *module_tag) {
 	fclose(proc);
 	return 0;
 }
+
+int ensure_config_file_exists(const char *config_file) {
+	char buf[2048];
+	int srcfd, destfd;
+	int nread;
+	int ret;
+
+	ret = access(config_file, R_OK|W_OK);
+	if ((ret == 0) || (errno == EACCESS)) {
+		if (ret != 0) {
+			wpa_printf(MSG_ERROR, "Cannot set RW to \"%s\": %s", config_file, strerror(errno));
+			return -1;
+		}
+		return 0;
+	} else if (errno != ENOENT) {
+			wpa_printf(MSG_ERROR, "Cannot access \"%s\": %s", config_file, strerror(errno));
+			return -1;
+	}
+
+	srcfd = TEMP_FAILURE_RETRY(open(SUPP_CONFIG_TEMPLATE, O_RDONLY));
+	if (srcfd < 0) {
+		wpa_printf(MSG_ERROR, "Cannot open \"%s\": %s", SUPP_CONFIG_TEMPLATE, strerror(errno));
+		return -1;
+	}
+
+	destfd = TEMP_FAILURE_RETRY(open(config_file, O_CREATE|O_RDWR, 0660));
+	if (destfd < 0) {
+		wpa_printf(MSG_ERROR, "Cannot open \"%s\": %s", config_file, strerror(errno));
+		return -1;
+	}
+
+	while ((nread = TEMP_FAILURE_RETRY(read(srcfd, buf, sizeof(buf)))) != 0) {
+		if (nread < 0) {
+			wpa_printf(MSG_ERROR, "Error reading \"%s\": %s", SUPP_CONFIG_TEMPLATE, strerror(errno));
+			close(srcfd);
+			close(destfd);
+			unlink(config_file);
+			return -1;
+		}
+		TEMP_FAILURE_RETRY(write(destfd, buf, nread));
+	}
+
+	close(destfd);
+	close(srcfd);
+
+	return 0;
+}
+
 #endif
 
 static void usage(void)
@@ -236,9 +287,22 @@ int main(int argc, char *argv[])
 		case 'B':
 			params.daemonize++;
 			break;
+#ifdef MULTI_WIFI_SUPPORT
+		case 'c':
+			if (is_wifi_driver_loaded("wlan") || is_wifi_driver_loaded("atbm602x_usb") || is_wifi_driver_loaded("mt7601usta")) {
+				if (!ensure_config_file_exists(P2P_CONFIG_FILE))
+					iface->confname = P2P_CONFIG_FILE;
+				else
+					wpa_printf(MSG_ERROR, "p2p_supplicant conf not exit");
+			} else {
+				iface->confname = optarg;
+			}
+			break;
+#else
 		case 'c':
 			iface->confname = optarg;
 			break;
+#endif
 		case 'C':
 			iface->ctrl_interface = optarg;
 			break;
@@ -275,7 +339,7 @@ int main(int argc, char *argv[])
 			goto out;
 #ifdef MULTI_WIFI_SUPPORT
 		case 'i':
-			if (is_wifi_driver_loaded("wlan")) {
+			if (is_wifi_driver_loaded("wlan" || is_wifi_driver_loaded("atbm602x_usb") || is_wifi_driver_loaded("mt7601usta"))) {
 				iface->ifname = "p2p0";
 			} else {
 				iface->ifname = optarg;
