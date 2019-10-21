@@ -22,7 +22,8 @@
 
 static const char SUPP_CONFIG_TEMPLATE[] = "/vendor/etc/wifi/wpa_supplicant.conf";
 static const char P2P_CONFIG_FILE[] = "/data/vendor/wifi/wpa/p2p_supplicant.conf";
-static int is_wifi_driver_loaded(const char *module_tag) {
+static int is_wifi_driver_loaded(const char *module_tag)
+{
 	FILE *proc;
 	char line[sizeof(module_tag)+10];
 
@@ -45,14 +46,15 @@ static int is_wifi_driver_loaded(const char *module_tag) {
 	return 0;
 }
 
-int ensure_config_file_exists(const char *config_file) {
+int ensure_config_file_exists(const char *config_file)
+{
 	char buf[2048];
 	int srcfd, destfd;
 	int nread;
 	int ret;
 
 	ret = access(config_file, R_OK|W_OK);
-	if ((ret == 0) || (errno == EACCESS)) {
+	if ((ret == 0) || (errno == EACCES)) {
 		if (ret != 0) {
 			wpa_printf(MSG_ERROR, "Cannot set RW to \"%s\": %s", config_file, strerror(errno));
 			return -1;
@@ -69,9 +71,10 @@ int ensure_config_file_exists(const char *config_file) {
 		return -1;
 	}
 
-	destfd = TEMP_FAILURE_RETRY(open(config_file, O_CREATE|O_RDWR, 0660));
+	destfd = TEMP_FAILURE_RETRY(open(config_file, O_CREAT|O_RDWR, 0660));
 	if (destfd < 0) {
-		wpa_printf(MSG_ERROR, "Cannot open \"%s\": %s", config_file, strerror(errno));
+		close(srcfd);
+		wpa_printf(MSG_ERROR, "Cannot create \"%s\": %s", config_file, strerror(errno));
 		return -1;
 	}
 
@@ -289,7 +292,7 @@ int main(int argc, char *argv[])
 			break;
 #ifdef MULTI_WIFI_SUPPORT
 		case 'c':
-			if (is_wifi_driver_loaded("dhd") == 1 || is_wifi_driver_loaded("bcmdhd") == 1)
+			if (!is_wifi_driver_loaded("dhd") && !is_wifi_driver_loaded("bcmdhd")) {
 				if (!ensure_config_file_exists(P2P_CONFIG_FILE))
 					iface->confname = P2P_CONFIG_FILE;
 				else
@@ -339,7 +342,7 @@ int main(int argc, char *argv[])
 			goto out;
 #ifdef MULTI_WIFI_SUPPORT
 		case 'i':
-			if (is_wifi_driver_loaded("dhd") == 1 || is_wifi_driver_loaded("bcmdhd") == 1)
+			if (!is_wifi_driver_loaded("dhd") && !is_wifi_driver_loaded("bcmdhd")) {
 				iface->ifname = "p2p0";
 			} else {
 				iface->ifname = optarg;
@@ -370,6 +373,7 @@ int main(int argc, char *argv[])
 		case 'm':
 			params.conf_p2p_dev = optarg;
 			break;
+#endif
 #endif /* CONFIG_P2P */
 		case 'o':
 			params.override_driver = optarg;
